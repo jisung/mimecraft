@@ -103,6 +103,11 @@ public final class Multipart implements Part {
     this.boundary = boundary;
   }
 
+  @Override
+  public String getCharset() {
+     return Utils.DEFAULT_CHARSET;
+  }
+
   @Override public Map<String, String> getHeaders() {
     return headers;
   }

@@ -15,6 +15,10 @@ public class TestPart implements Part {
     this.content = content.getBytes(UTF_8);
   }
 
+  @Override public String getCharset() {
+    return Utils.DEFAULT_CHARSET;
+  }
+
   @Override public Map<String, String> getHeaders() {
     return Collections.emptyMap();
   }

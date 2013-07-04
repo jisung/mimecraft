@@ -17,14 +17,14 @@ public final class FormEncoding implements Part {
   public static class Builder {
     private final StringBuilder content = new StringBuilder();
 
-    private String charsetName;
+    private String charset;
 
     public Builder() {
         this("UTF-8");
     }
 
-    public Builder(String charsetName) {
-        this.charsetName = charsetName;
+    public Builder(String charset) {
+        this.charset = charset;
     }
 
     /** Add new key-value pair. */
@@ -33,9 +33,9 @@ public final class FormEncoding implements Part {
         content.append('&');
       }
       try {
-        content.append(URLEncoder.encode(name, charsetName))
+        content.append(URLEncoder.encode(name, charset))
             .append('=')
-            .append(URLEncoder.encode(value, charsetName));
+            .append(URLEncoder.encode(value, charset));
       } catch (UnsupportedEncodingException e) {
         throw new AssertionError(e);
       }
@@ -47,28 +47,34 @@ public final class FormEncoding implements Part {
       if (content.length() == 0) {
         throw new IllegalStateException("Form encoded body must have at least one part.");
       }
-      return new FormEncoding(content.toString(), charsetName);
+      return new FormEncoding(content.toString(), charset);
     }
   }
 
-  private String charsetName;
+  private String charset;
   private String data;
 
-  private FormEncoding(String data, String charsetName) {
+  private FormEncoding(String data, String charset) {
     this.data = data;
-    this.charsetName = charsetName;
+    this.charset = charset;
+  }
+
+  @Override public String getCharset() {
+    return charset;
   }
 
   @Override public Map<String, String> getHeaders() {
-    return Collections.singletonMap("Content-Type", "application/x-www-form-urlencoded; charset=" + charsetName);
+    return Collections.singletonMap("Content-Type", "application/x-www-form-urlencoded; charset="
+            + charset);
   }
 
   @Override public void writeBodyTo(OutputStream stream) throws IOException {
       byte[] bytes;
       try {
-          bytes = data.getBytes(charsetName);
+          bytes = data.getBytes(charset);
       } catch (UnsupportedEncodingException e) {
-          throw new IllegalArgumentException("Unable to convert input to " + charsetName + ": " + data, e);
+          throw new IllegalArgumentException("Unable to convert input to " + charset + ": "
+                  + data, e);
       }
       if (bytes != null) {
         stream.write(bytes);

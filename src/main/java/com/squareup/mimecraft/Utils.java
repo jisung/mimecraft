@@ -1,8 +1,6 @@
 // Copyright 2013 Square, Inc.
 package com.squareup.mimecraft;
 
-import android.text.TextUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,6 +9,8 @@ final class Utils {
   private Utils() {
     // No instances.
   }
+
+  public static final String DEFAULT_CHARSET = "UTF-8";
 
   private static final String CHARSET_DELIMITER = "charset=";
 
@@ -47,7 +47,7 @@ final class Utils {
   }
 
   static String extractCharsetFromContentType(String contentType, String defaultCharset) {
-      if (!TextUtils.isEmpty(contentType)) {
+      if (contentType != null) {
         int indexOfCharsetKey = contentType.lastIndexOf(CHARSET_DELIMITER);
         int indexOfCharsetValue = indexOfCharsetKey + CHARSET_DELIMITER.length();
         if (indexOfCharsetKey != -1 && (contentType.length() - (indexOfCharsetValue + 1)) > 0) {

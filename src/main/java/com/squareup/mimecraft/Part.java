@@ -1,23 +1,28 @@
 // Copyright 2013 Square, Inc.
 package com.squareup.mimecraft;
 
+import java.io.OutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.io.FileInputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.squareup.mimecraft.Utils.copyStream;
 import static com.squareup.mimecraft.Utils.isNotEmpty;
 import static com.squareup.mimecraft.Utils.isNotNull;
 import static com.squareup.mimecraft.Utils.isNotZero;
+import static com.squareup.mimecraft.Utils.copyStream;
+import static com.squareup.mimecraft.Utils.extractCharsetFromContentType;
 import static com.squareup.mimecraft.Utils.isNull;
+
 
 /** HTTP request data with associated headers. */
 public interface Part {
+
+  String getCharset();
+
   /** HTTP headers. */
   Map<String, String> getHeaders();
 
@@ -31,6 +36,7 @@ public interface Part {
   public class Builder {
     private static final int BUFFER_SIZE = 4096;
 
+    private String charset = Utils.DEFAULT_CHARSET;
     private String headerType;
     int headerLength;
     private String headerLanguage;
@@ -54,6 +60,7 @@ public interface Part {
       isNotEmpty(type, "Type must not be empty.");
       isNull(headerType, "Type header already set.");
       isNull(bodyMultipart, "Type cannot be set with multipart body.");
+      charset = extractCharsetFromContentType(type, Utils.DEFAULT_CHARSET);
       headerType = type;
       return this;
     }
@@ -111,14 +118,13 @@ public interface Part {
     /** Use the specified string as the body. */
     public Builder body(String body) {
       isNotNull(body, "String body must not be null.");
-      isNotEmpty(headerType, "contentType must be set");
-      String charsetName = Utils.extractCharsetFromContentType(headerType, "UTF-8");
       checkSetBody();
       byte[] bytes;
       try {
-        bytes = body.getBytes(charsetName);
+        bytes = body.getBytes(charset);
       } catch (UnsupportedEncodingException e) {
-        throw new IllegalArgumentException("Unable to convert input to " + charsetName + ": " + body, e);
+        throw new IllegalArgumentException("Unable to convert input to " + charset + ": " + body,
+                e);
       }
       bodyBytes = bytes;
       headerLength = bytes.length;
@@ -183,10 +189,15 @@ public interface Part {
     }
 
     private abstract static class PartImpl implements Part {
+      private String charset = Utils.DEFAULT_CHARSET;
       private final Map<String, String> headers;
 
       protected PartImpl(Map<String, String> headers) {
         this.headers = headers;
+      }
+
+      @Override public String getCharset() {
+          return charset;
       }
 
       @Override public Map<String, String> getHeaders() {
