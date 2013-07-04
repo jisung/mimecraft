@@ -111,12 +111,14 @@ public interface Part {
     /** Use the specified string as the body. */
     public Builder body(String body) {
       isNotNull(body, "String body must not be null.");
+      isNotEmpty(headerType, "contentType must be set");
+      String charsetName = Utils.extractCharsetFromContentType(headerType, "UTF-8");
       checkSetBody();
       byte[] bytes;
       try {
-        bytes = body.getBytes("UTF-8");
+        bytes = body.getBytes(charsetName);
       } catch (UnsupportedEncodingException e) {
-        throw new IllegalArgumentException("Unable to convert input to UTF-8: " + body, e);
+        throw new IllegalArgumentException("Unable to convert input to " + charsetName + ": " + body, e);
       }
       bodyBytes = bytes;
       headerLength = bytes.length;
