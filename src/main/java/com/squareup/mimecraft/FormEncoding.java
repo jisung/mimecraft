@@ -13,12 +13,19 @@ import java.util.Map;
  * form data.
  */
 public final class FormEncoding implements Part {
-  private static final Map<String, String> HEADERS =
-      Collections.singletonMap("Content-Type", "application/x-www-form-urlencoded");
-
-  /** Fluent API to build {@link FormEncoding} instances. */
+   /** Fluent API to build {@link FormEncoding} instances. */
   public static class Builder {
     private final StringBuilder content = new StringBuilder();
+
+    private String charsetName;
+
+    public Builder() {
+        this("UTF-8");
+    }
+
+    public Builder(String charsetName) {
+        this.charsetName = charsetName;
+    }
 
     /** Add new key-value pair. */
     public Builder add(String name, String value) {
@@ -26,9 +33,9 @@ public final class FormEncoding implements Part {
         content.append('&');
       }
       try {
-        content.append(URLEncoder.encode(name, "UTF-8"))
+        content.append(URLEncoder.encode(name, charsetName))
             .append('=')
-            .append(URLEncoder.encode(value, "UTF-8"));
+            .append(URLEncoder.encode(value, charsetName));
       } catch (UnsupportedEncodingException e) {
         throw new AssertionError(e);
       }
@@ -40,25 +47,31 @@ public final class FormEncoding implements Part {
       if (content.length() == 0) {
         throw new IllegalStateException("Form encoded body must have at least one part.");
       }
-      return new FormEncoding(content.toString());
+      return new FormEncoding(content.toString(), charsetName);
     }
   }
 
-  private final byte[] data;
+  private String charsetName;
+  private String data;
 
-  private FormEncoding(String data) {
-    try {
-      this.data = data.getBytes("UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalArgumentException("Unable to convert input to UTF-8: " + data, e);
-    }
+  private FormEncoding(String data, String charsetName) {
+    this.data = data;
+    this.charsetName = charsetName;
   }
 
   @Override public Map<String, String> getHeaders() {
-    return HEADERS;
+    return Collections.singletonMap("Content-Type", "application/x-www-form-urlencoded; charset=" + charsetName);
   }
 
   @Override public void writeBodyTo(OutputStream stream) throws IOException {
-    stream.write(data);
+      byte[] bytes;
+      try {
+          bytes = data.getBytes(charsetName);
+      } catch (UnsupportedEncodingException e) {
+          throw new IllegalArgumentException("Unable to convert input to " + charsetName + ": " + data, e);
+      }
+      if (bytes != null) {
+        stream.write(bytes);
+      }
   }
 }
